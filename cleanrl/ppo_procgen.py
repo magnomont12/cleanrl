@@ -428,6 +428,9 @@ if __name__ == "__main__":
         y_pred, y_true = b_values.cpu().numpy(), b_returns.cpu().numpy()
         var_y = np.var(y_true)
         explained_var = np.nan if var_y == 0 else 1 - np.var(y_true - y_pred) / var_y
+        if (update - 1) % 6 == 0:
+            print(f"Saving the model_{update}")
+            torch.save(agent.state_dict(), f"./saves/model_{update}.pt")
 
         # TRY NOT TO MODIFY: record rewards for plotting purposes
         writer.add_scalar(
@@ -445,5 +448,6 @@ if __name__ == "__main__":
             "charts/SPS", int(global_step / (time.time() - start_time)), global_step
         )
 
+    torch.save(agent.state_dict(), "./saves/model_final.pt")
     envs.close()
     writer.close()
