@@ -173,6 +173,12 @@ if __name__ == "__main__":
         "hyperparameters",
         "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(args).items()])),
     )
+    ##create dir
+    if not os.path.exists(args.env_id):
+        os.mkdir(args.env_id)
+        print(f"{args.env_id}")
+    else:
+        print(f"{args.env_id} O diretório já existe")
 
     # TRY NOT TO MODIFY: seeding
     random.seed(args.seed)
