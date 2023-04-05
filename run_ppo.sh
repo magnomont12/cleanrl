@@ -6,5 +6,5 @@ env_ids=("bigfish" "bossfight" "caveflyer" "chaser" "climber" "coinrun" "dodgeba
 # Loop através dos diferentes valores e execute o script python com cada um deles
 for env_id in "${env_ids[@]}"
 do
-    python cleanrl/ppo_procgen.py --seed 1 --total-timesteps 30000 --cuda false --env-id="$env_id"
+    python cleanrl/ppo_procgen.py --seed 1 --total-timesteps 100000 --cuda false --env-id="$env_id"
 done

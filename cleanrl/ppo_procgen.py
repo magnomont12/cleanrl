@@ -13,6 +13,7 @@ import torch.optim as optim
 from procgen import ProcgenEnv
 from torch.distributions.categorical import Categorical
 from torch.utils.tensorboard import SummaryWriter
+import pandas as pd
 
 
 def parse_args():
@@ -219,7 +220,10 @@ if __name__ == "__main__":
     next_done = torch.zeros(args.num_envs).to(device)
     num_updates = args.total_timesteps // args.batch_size
 
+    all_reward = []
     for update in range(1, num_updates + 1):
+        mean_reward = 0
+        finished_eps = 0
         # Annealing the rate if instructed to do so.
         if args.anneal_lr:
             frac = 1.0 - (update - 1.0) / num_updates
@@ -246,6 +250,8 @@ if __name__ == "__main__":
             for item in info:
                 if "episode" in item.keys():
                     print(f"global_step={global_step}, episodic_return={item['episode']['r']}")
+                    mean_reward += item['episode']['r']
+                    finished_eps += 1
                     writer.add_scalar("charts/episodic_return", item["episode"]["r"], global_step)
                     writer.add_scalar("charts/episodic_length", item["episode"]["l"], global_step)
                     break
@@ -344,6 +350,13 @@ if __name__ == "__main__":
         writer.add_scalar("losses/explained_variance", explained_var, global_step)
         print("SPS:", int(global_step / (time.time() - start_time)))
         writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
+        print(f"Recompensa media no update {update}, recompensa media: {mean_reward/finished_eps}")
+        all_reward.append(mean_reward/finished_eps)
+        
 
     envs.close()
     writer.close()
+    torch.save(agent, f"{args.env_id}/final_model.pt")
+    df = {"mean_rewards": all_reward}
+    df = pd.DataFrame(df)
+    df.to_csv(f"{args.env_id}/reward.csv", index=False)
