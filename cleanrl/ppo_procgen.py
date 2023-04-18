@@ -247,7 +247,7 @@ if __name__ == "__main__":
 
     ##create dir
     if not os.path.exists(args.env_id):
-        os.mkdir(args.env_id)
+        os.mkdir(f"robustness/{args.env_id}")
         print(f"{args.env_id}")
     else:
         print(f"{args.env_id} O diretório já existe")
@@ -266,7 +266,7 @@ if __name__ == "__main__":
         env_name=args.env_id,
         num_levels=0,
         start_level=0,
-        distribution_mode="easy",
+        distribution_mode="hard",
     )
     envs = gym.wrappers.TransformObservation(envs, lambda obs: obs["rgb"])
     envs.single_action_space = envs.action_space
@@ -337,7 +337,7 @@ if __name__ == "__main__":
                     print(
                         f"global_step={global_step}, episodic_return={item['episode']['r']}"
                     )
-                    mean_reward += item['episode']['r']
+                    mean_reward += item["episode"]["r"]
                     finished_eps += 1
                     writer.add_scalar(
                         "charts/episodic_return", item["episode"]["r"], global_step
@@ -443,7 +443,9 @@ if __name__ == "__main__":
         explained_var = np.nan if var_y == 0 else 1 - np.var(y_true - y_pred) / var_y
         if (update - 1) % 601 == 0:
             print(f"Saving the model_{update}")
-            torch.save(agent.state_dict(), f"./{args.env_id}/model_{update}.pt")
+            torch.save(
+                agent.state_dict(), f"./robustness/{args.env_id}/model_{update}.pt"
+            )
 
         # TRY NOT TO MODIFY: record rewards for plotting purposes
         writer.add_scalar(
@@ -460,12 +462,14 @@ if __name__ == "__main__":
         writer.add_scalar(
             "charts/SPS", int(global_step / (time.time() - start_time)), global_step
         )
-        print(f"Recompensa media no update {update}, recompensa media: {mean_reward/finished_eps}")
-        all_reward.append(mean_reward/finished_eps)
+        print(
+            f"Recompensa media no update {update}, recompensa media: {mean_reward/finished_eps}"
+        )
+        all_reward.append(mean_reward / finished_eps)
 
     torch.save(agent.state_dict(), f"./{args.env_id}/model_final.pt")
     envs.close()
     writer.close()
     df = {"mean_rewards": all_reward}
     df = pd.DataFrame(df)
-    df.to_csv(f"{args.env_id}/reward.csv", index=False)
+    df.to_csv(f"./robustness/{args.env_id}/reward.csv", index=False)
