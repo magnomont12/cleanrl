@@ -13,6 +13,7 @@ import torch.optim as optim
 from procgen import ProcgenEnv
 from torch.distributions.categorical import Categorical
 from torch.utils.tensorboard import SummaryWriter
+import pandas as pd
 
 
 def parse_args():
@@ -244,6 +245,13 @@ if __name__ == "__main__":
         % ("\n".join([f"|{key}|{value}|" for key, value in vars(args).items()])),
     )
 
+    ##create dir
+    if not os.path.exists(args.env_id):
+        os.mkdir(args.env_id)
+        print(f"{args.env_id}")
+    else:
+        print(f"{args.env_id} O diretório já existe")
+
     # TRY NOT TO MODIFY: seeding
     random.seed(args.seed)
     np.random.seed(args.seed)
@@ -295,7 +303,10 @@ if __name__ == "__main__":
     next_done = torch.zeros(args.num_envs).to(device)
     num_updates = args.total_timesteps // args.batch_size
 
+    all_reward = []
     for update in range(1, num_updates + 1):
+        mean_reward = 0
+        finished_eps = 0
         # Annealing the rate if instructed to do so.
         if args.anneal_lr:
             frac = 1.0 - (update - 1.0) / num_updates
@@ -326,6 +337,8 @@ if __name__ == "__main__":
                     print(
                         f"global_step={global_step}, episodic_return={item['episode']['r']}"
                     )
+                    mean_reward += item['episode']['r']
+                    finished_eps += 1
                     writer.add_scalar(
                         "charts/episodic_return", item["episode"]["r"], global_step
                     )
@@ -430,7 +443,7 @@ if __name__ == "__main__":
         explained_var = np.nan if var_y == 0 else 1 - np.var(y_true - y_pred) / var_y
         if (update - 1) % 601 == 0:
             print(f"Saving the model_{update}")
-            torch.save(agent.state_dict(), f"./saves/model_{update}.pt")
+            torch.save(agent.state_dict(), f"./{args.env_id}/model_{update}.pt")
 
         # TRY NOT TO MODIFY: record rewards for plotting purposes
         writer.add_scalar(
@@ -447,7 +460,12 @@ if __name__ == "__main__":
         writer.add_scalar(
             "charts/SPS", int(global_step / (time.time() - start_time)), global_step
         )
+        print(f"Recompensa media no update {update}, recompensa media: {mean_reward/finished_eps}")
+        all_reward.append(mean_reward/finished_eps)
 
-    torch.save(agent.state_dict(), "./saves/model_final.pt")
+    torch.save(agent.state_dict(), f"./{args.env_id}/model_final.pt")
     envs.close()
     writer.close()
+    df = {"mean_rewards": all_reward}
+    df = pd.DataFrame(df)
+    df.to_csv(f"{args.env_id}/reward.csv", index=False)
